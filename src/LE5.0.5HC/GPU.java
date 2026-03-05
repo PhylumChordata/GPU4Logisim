@@ -82,9 +82,11 @@ class GPU extends ManagedComponent implements ToolTipMaker
 	static final String BLINK_YES = "Blinking Dot";
 	static final String BLINK_NO = "No Cursor";
 	static final String[] BLINK_OPTIONS = { BLINK_YES, BLINK_NO };
-	static final String RESET_ASYNC = "Asynchronous";
-	static final String RESET_SYNC = "Synchronous";
-	static final String[] RESET_OPTIONS = { RESET_ASYNC, RESET_SYNC };
+	static final String RESET_ASYNC1 = "Asynchronous";
+	static final String RESET_SYNC1 = "Synchronous";
+	static final String RESET_ASYNC2 = "Asynchronous, Clear RAM";
+	static final String RESET_SYNC2 = "Synchronous, Clear RAM";
+	static final String[] RESET_OPTIONS = { RESET_ASYNC1, RESET_SYNC1, RESET_ASYNC2, RESET_SYNC2 };
 	static final String TRIG_NONE = "No Designated Trigger";
 	static final String TRIG_FALLING = "Falling Edge";
 	static final String TRIG_RISING = "Rising Edge";
@@ -152,6 +154,7 @@ class GPU extends ManagedComponent implements ToolTipMaker
 	private boolean debug=false;
 	private String debugString=null;
 	private String direct;
+	private Object reset_option=null;
 
 	private static class Factory extends AbstractComponentFactory
 	{
@@ -241,8 +244,7 @@ class GPU extends ManagedComponent implements ToolTipMaker
 	dbuff=null;
 	gpuColorVal=0xffffff;
 	gpuColor=new Color(0xffffff);
-	// Arrays.fill(gpuRAM,0);
-	// Arrays.fill(gpuROM,0);
+	if (RESET_SYNC2.equals(reset_option) || RESET_ASYNC2.equals(reset_option)) { Arrays.fill(gpuRAM,0); }
 	// for (i=0;i<NUM_USERFONTS;i++) sfu[i]=null;
 	}
 
@@ -267,7 +269,7 @@ class GPU extends ManagedComponent implements ToolTipMaker
 		state.needsReset=false;
 		}
 
-	Object reset_option = attrs.getValue(RESET_OPTION);
+	reset_option = attrs.getValue(RESET_OPTION);
 	if (reset_option == null) reset_option = RESET_OPTIONS[0];
 	Object trigger_option = attrs.getValue(TRIGGER_OPTION);
 	if (trigger_option == null) trigger_option = TRIGGER_OPTIONS[0];
@@ -281,7 +283,7 @@ class GPU extends ManagedComponent implements ToolTipMaker
 		g.setColor(new Color(state.img.getColorModel().getRGB(color)));
 		g.drawLine(x, y, x, y);
 		//state.img.setRGB(x,y,color);
-		if (RESET_SYNC.equals(reset_option) && val(circuitState, P_RST) == Value.TRUE)
+		if ((RESET_SYNC1.equals(reset_option) || (RESET_SYNC2.equals(reset_option))) && val(circuitState, P_RST) == Value.TRUE)
 			{
 			// Not sure how much should be reset
 			//fullGpuReset((Graphics2D)g);
@@ -291,10 +293,11 @@ class GPU extends ManagedComponent implements ToolTipMaker
 			for (i=0;i<NUM_BLITS;i++) { blitalx[i]=blitaly[i]=0; }
 			stroke=new BasicStroke(1f);
 			gradient=null;
+			if (RESET_SYNC2.equals(reset_option)) { Arrays.fill(gpuRAM,0); }
 			}
 		}
 
-	if (!RESET_SYNC.equals(reset_option) && val(circuitState, P_RST) == Value.TRUE)
+	if ((RESET_ASYNC1.equals(reset_option) || (RESET_ASYNC2.equals(reset_option))) && val(circuitState, P_RST) == Value.TRUE)
 		{
 		// Not sure how much should be reset
 		Graphics g = state.img.getGraphics();
@@ -304,6 +307,7 @@ class GPU extends ManagedComponent implements ToolTipMaker
 		for (i=0;i<NUM_BLITS;i++) { blitalx[i]=blitaly[i]=0; }
 		stroke=new BasicStroke(1f);
 		gradient=null;
+		if (RESET_ASYNC2.equals(reset_option)) { Arrays.fill(gpuRAM,0); }
 		}
 
 	if (state.tickGPU(clk,trigger_option) && gpusel >= 1)
